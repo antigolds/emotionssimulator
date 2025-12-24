@@ -1,0 +1,1489 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Emotions Simulator</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+        <link
+            href="https://fonts.googleapis.com/css2?family=VT323&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                --bg-color: #121212;
+                --panel-color: #1e1e1e;
+                --accent-color: #ffffff;
+                --text-color: #e0e0e0;
+                --danger-color: #ff6b6b;
+                --paused-color: #ff9e64;
+                --radius: 8px;
+            }
+
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: var(--bg-color);
+                color: var(--text-color);
+                font-family: "VT323", monospace;
+                overflow: hidden;
+                display: flex;
+                height: 100vh;
+            }
+
+            #app-container {
+                display: flex;
+                width: 100%;
+                height: 100%;
+            }
+
+            #sidebar {
+                width: 260px;
+                background-color: var(--panel-color);
+                border-right: 2px solid #333;
+                display: flex;
+                flex-direction: column;
+                padding: 1rem;
+                box-sizing: border-box;
+                z-index: 10;
+                overflow-y: auto;
+            }
+
+            .section-title {
+                color: var(--accent-color);
+                font-size: 1.2rem;
+                margin-bottom: 0.5rem;
+                border-bottom: 1px solid #444;
+                padding-bottom: 0.2rem;
+                margin-top: 1rem;
+            }
+
+            /* Buttons styling */
+            .tool-btn {
+                background: #2d2d2d;
+                border: 1px solid #444;
+                color: #aaa;
+                padding: 0 10px;
+                margin-bottom: 8px;
+                cursor: pointer;
+                font-family: inherit;
+                font-size: 1.1rem;
+                text-align: left;
+                transition: all 0.1s; /* animation speed */
+                display: flex;
+                align-items: center;
+                width: 100%;
+                min-height: 48px;
+                border-radius: var(--radius);
+                position: relative;
+                user-select: none;
+                box-sizing: border-box;
+            }
+
+            .tool-btn:hover {
+                background: #3d3d3d;
+                color: white;
+                border-color: #666;
+                transform: translateX(2px);
+            }
+
+            .tool-btn.active {
+                background: var(--accent-color);
+                color: #121212;
+                border-color: rgba(255, 255, 255, 0.5);
+                font-weight: bold;
+                box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+            }
+
+            /* make svg icon color follow text color */
+            .tool-btn svg {
+                fill: currentColor;
+                transition: fill 0.1s;
+            }
+
+            /* Special style for pause btn */
+            #btn-pause.active {
+                background: var(--paused-color);
+                border-color: var(--paused-color);
+                color: #121212;
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.8;
+                }
+                100% {
+                    opacity: 1;
+                }
+            }
+
+            .pixel-icon {
+                width: 24px;
+                height: 24px;
+                margin-right: 12px;
+                display: inline-block;
+                flex-shrink: 0;
+                image-rendering: pixelated;
+            }
+
+            .color-indicator {
+                width: 16px;
+                height: 16px;
+                margin-right: 12px;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                flex-shrink: 0;
+                border-radius: 4px;
+            }
+
+            #canvas-wrapper {
+                flex-grow: 1;
+                position: relative;
+                background-color: #000;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                cursor: crosshair;
+            }
+
+            #tutorial-overlay {
+                position: absolute;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0, 0, 0, 0.9);
+                border: 1px solid var(--accent-color);
+                padding: 15px 25px;
+                text-align: center;
+                pointer-events: none;
+                z-index: 20;
+                transition: opacity 0.5s;
+                border-radius: var(--radius);
+            }
+
+            #tutorial-text {
+                font-size: 1.5rem;
+                color: white;
+                text-shadow: 0 0 5px var(--accent-color);
+            }
+
+            /* Popup */
+            #lookup-modal {
+                position: fixed;
+                display: none;
+                background: rgba(20, 20, 20, 0.98);
+                border: 1px solid var(--accent-color);
+                padding: 15px;
+                width: 220px;
+                pointer-events: none;
+                z-index: 100;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+                border-radius: var(--radius);
+            }
+
+            #lookup-title {
+                font-size: 1.4rem;
+                color: var(--accent-color);
+                margin: 0 0 5px 0;
+                border-bottom: 1px solid #444;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            #lookup-type {
+                font-size: 1rem;
+                color: #888;
+                margin-bottom: 10px;
+                font-style: italic;
+            }
+
+            #lookup-desc {
+                font-size: 1.1rem;
+                line-height: 1.3;
+                margin-bottom: 10px;
+            }
+
+            #lookup-interactions {
+                font-size: 0.95rem;
+                color: #bbb;
+                border-top: 1px dashed #444;
+                padding-top: 8px;
+                background: rgba(255, 255, 255, 0.05);
+                padding: 8px;
+                border-radius: 4px;
+            }
+
+            .controls-bottom {
+                margin-top: auto;
+                border-top: 1px solid #444;
+                padding-top: 1rem;
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+
+            button.action-btn {
+                background: #444;
+                color: white;
+                border: none;
+                padding: 0 10px;
+                font-family: inherit;
+                cursor: pointer;
+                font-size: 1.1rem;
+                transition: background 0.2s;
+                border-radius: var(--radius);
+                min-height: 48px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            button.action-btn:hover {
+                background: #555;
+            }
+
+            .btn-manual {
+                width: 48px; /* square button */
+                flex-shrink: 0;
+            }
+
+            .btn-clear {
+                flex-grow: 1;
+            }
+
+            #size-control {
+                position: absolute;
+                bottom: 30px;
+                right: 30px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                z-index: 50;
+                background: rgba(30, 30, 30, 0.85);
+                padding: 15px 10px;
+                border: 1px solid #444;
+                border-radius: var(--radius);
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+                height: 160px;
+                justify-content: space-between;
+                backdrop-filter: blur(4px);
+            }
+
+            #size-label {
+                color: var(--accent-color);
+                font-size: 1rem;
+                text-align: center;
+                margin-bottom: 5px;
+                width: 100%;
+                letter-spacing: 1px;
+            }
+
+            #size-value {
+                color: white;
+                font-size: 1.1rem;
+                margin-top: 5px;
+                font-weight: bold;
+            }
+
+            /* slider styling */
+            input[type="range"].vertical-slider {
+                -webkit-appearance: none;
+                width: 120px;
+                height: 6px;
+                background: #444;
+                outline: none;
+                opacity: 0.8;
+                transition: opacity 0.2s;
+                transform: rotate(-90deg);
+                margin: 0;
+                cursor: pointer;
+                border-radius: 3px;
+            }
+
+            input[type="range"].vertical-slider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 18px;
+                height: 18px;
+                background: var(--accent-color);
+                border-radius: 50%;
+                cursor: pointer;
+                border: 3px solid #1e1e1e;
+                box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app-container">
+            <div id="sidebar">
+                <div
+                    style="
+                        font-size: 1.8rem;
+                        color: white;
+                        margin-bottom: 1rem;
+                        text-align: center;
+                        line-height: 0.9;
+                    "
+                >
+                    EMOTIONS<br /><span
+                        style="
+                            font-size: 1.2rem;
+                            color: #888;
+                            letter-spacing: 3px;
+                        "
+                        >SIMULATOR</span
+                    >
+                </div>
+
+                <div class="section-title">TOOLS</div>
+
+                <button
+                    class="tool-btn active"
+                    onclick="togglePause()"
+                    id="btn-pause"
+                >
+                    <svg class="pixel-icon" viewBox="0 0 24 24">
+                        <path
+                            id="icon-play"
+                            style="display: none"
+                            d="M6 4v16l14-8z"
+                        />
+                        <path id="icon-pause" d="M4 4h6v16H4zm10 0h6v16h-6z" />
+                    </svg>
+                    <span id="text-pause">Start Simulation</span>
+                </button>
+
+                <button
+                    class="tool-btn"
+                    onclick="setTool('lookup')"
+                    id="btn-lookup"
+                >
+                    <svg class="pixel-icon" viewBox="0 0 24 24">
+                        <path
+                            d="M10 2h4v2h2v2h2v4h-2v2h-2v2h-2v4h-2v-4h2v-2h2v-2h2V8h-2V6h-4v2H8V4h2z"
+                        />
+                        <rect x="10" y="20" width="4" height="4" />
+                    </svg>
+                    Lookup
+                </button>
+
+                <button
+                    class="tool-btn"
+                    onclick="setTool('eraser')"
+                    id="btn-eraser"
+                >
+                    <svg class="pixel-icon" viewBox="0 0 24 24">
+                        <path d="M4 4h16v16H4V4zm2 2v12h12V6H6z" />
+                        <path
+                            d="M8 8h2v2H8zm4 0h2v2h-2zm4 0h2v2h-2zM8 12h2v2H8zm4 0h2v2h-2zm4 0h2v2h-2zM8 16h2v2H8zm4 0h2v2h-2zm4 0h2v2h-2z"
+                            fill-opacity="0.5"
+                        />
+                    </svg>
+                    Eraser
+                </button>
+
+                <button class="tool-btn" onclick="setTool('mix')" id="btn-mix">
+                    <svg class="pixel-icon" viewBox="0 0 24 24">
+                        <path
+                            d="M10 2h4v2h2v2h2v2h2v8h-2v2h-2v2h-4v-2h4v-2h2v-4h-2V8h-2V6h-4v2H8v2H6v2h2v2h2v2h2v2H8v-2H6v-2H4v-8h2V6h2V4h2z"
+                        />
+                        <rect x="10" y="10" width="4" height="4" />
+                    </svg>
+                    Mix
+                </button>
+
+                <div class="section-title">EMOTIONS</div>
+                <div id="element-buttons">
+                    <!-- Buttons generated by JS because there are too many -->
+                </div>
+
+                <div class="controls-bottom">
+                    <button
+                        class="action-btn btn-manual"
+                        onclick="window.open('https://google.com', '_blank')"
+                        title="Manual"
+                    >
+                        <svg
+                            class="pixel-icon"
+                            viewBox="0 0 24 24"
+                            style="margin: 0; width: 28px; height: 28px"
+                        >
+                            <path
+                                d="M4 4h10v16H4V4zm2 2v12h6V6H6z"
+                                fill="currentColor"
+                            />
+                            <path
+                                d="M14 4h6v16h-6v-2h4V6h-4V4z"
+                                fill="currentColor"
+                                fill-opacity="0.7"
+                            />
+                            <rect
+                                x="8"
+                                y="8"
+                                width="4"
+                                height="2"
+                                fill="currentColor"
+                            />
+                            <rect
+                                x="8"
+                                y="12"
+                                width="4"
+                                height="2"
+                                fill="currentColor"
+                            />
+                        </svg>
+                    </button>
+                    <button
+                        class="action-btn btn-clear"
+                        onclick="resetCanvas()"
+                    >
+                        Clear Canvas
+                    </button>
+                </div>
+            </div>
+
+            <div id="canvas-wrapper">
+                <div id="tutorial-overlay">
+                    <div id="tutorial-text">
+                        Paused. Press 'Start Simulation' to begin.
+                    </div>
+                </div>
+
+                <div
+                    id="size-control"
+                    onmouseenter="isHoveringSidebar=true"
+                    onmouseleave="isHoveringSidebar=false"
+                >
+                    <div id="size-label">SIZE</div>
+                    <div
+                        style="
+                            height: 100px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 20px;
+                        "
+                    >
+                        <input
+                            type="range"
+                            min="1"
+                            max="30"
+                            value="5"
+                            class="vertical-slider"
+                            id="brush-slider"
+                            oninput="updateBrushSize(this.value)"
+                        />
+                    </div>
+                    <div id="size-value">5</div>
+                </div>
+            </div>
+
+            <div id="lookup-modal">
+                <h3 id="lookup-title">Emotion</h3>
+                <div id="lookup-type">Type</div>
+                <div id="lookup-desc">Description goes here.</div>
+                <div id="lookup-interactions">Interactions...</div>
+            </div>
+        </div>
+
+        <script>
+            //
+            // --------------------------------------------------
+            // JS SCRIPT
+            // --------------------------------------------------
+            //
+            // --- CONFIGURATION ---
+            const CELL_SIZE = 4;
+            let COLS, ROWS;
+            let grid = [];
+            let bufferImage;
+
+            // --- ELEMENTS ---
+            // IDs for the grid
+            const E_EMPTY = 0;
+            const E_CLOUD = 1;
+            const E_JOY = 2;
+            const E_SADNESS = 3;
+            const E_ANGER = 4;
+            const E_FEAR = 5;
+            const E_DISGUST = 6;
+            const E_LOVE = 7;
+            const E_ANXIETY = 8;
+            const E_STEAM = 9;
+            const E_ROT = 10;
+            const E_NOSTALGIA = 11;
+            const E_PANIC = 12;
+            const E_BLOOM = 13;
+            const E_HOT_CLOUD = 14;
+
+            // Generator offset (magic number for permanent pixels)
+            const GEN_OFFSET = 100;
+
+            // --- METADATA ---
+            const ELEMENTS = {
+                [E_EMPTY]: {
+                    name: "Empty",
+                    color: [0, 0, 0],
+                    type: "Void",
+                    desc: "The void awaiting feeling.",
+                },
+                [E_CLOUD]: {
+                    name: "Cloud",
+                    color: [255, 255, 255],
+                    type: "Solid",
+                    desc: "Indestructible structure. Conducts heat.",
+                    interactions:
+                        "Blocks all. Becomes Hot Cloud if touched by Anger.",
+                },
+                [E_HOT_CLOUD]: {
+                    name: "Hot Cloud",
+                    color: [255, 150, 150],
+                    type: "Solid (Hot)",
+                    desc: "Heated barrier.",
+                    interactions:
+                        "Boils Sadness instantly. Cools if not sustained.",
+                },
+                [E_JOY]: {
+                    name: "Joy",
+                    color: [255, 215, 0],
+                    type: "Gas",
+                    desc: "Rises rapidly towards the light.",
+                    interactions: "Mixes with Sadness.",
+                },
+                [E_SADNESS]: {
+                    name: "Sadness",
+                    color: [65, 105, 225],
+                    type: "Liquid",
+                    desc: "Heavy, flows downward.",
+                    interactions:
+                        "Extinguishes Anger. Boils into Catharsis on contact with Hot Cloud.",
+                },
+                [E_ANGER]: {
+                    name: "Anger",
+                    color: [220, 20, 60],
+                    type: "Fire",
+                    desc: "Volatile and destructive.",
+                    interactions: "Heats up Cloud. Burns Love.",
+                },
+                [E_FEAR]: {
+                    name: "Fear",
+                    color: [47, 79, 79],
+                    type: "Powder",
+                    desc: "Heavy and unstable.",
+                    interactions: "Explodes with Anxiety.",
+                },
+                [E_DISGUST]: {
+                    name: "Disgust",
+                    color: [85, 107, 47],
+                    type: "Acid",
+                    desc: "Viscous slime that eats through obstacles.",
+                    interactions: "Corrodes Clouds.",
+                },
+                [E_LOVE]: {
+                    name: "Love",
+                    color: [255, 105, 180],
+                    type: "Organic",
+                    desc: "Grows slowly.",
+                    interactions: "Burned by Anger. Fed by Sadness.",
+                },
+                [E_ANXIETY]: {
+                    name: "Anxiety",
+                    color: [224, 255, 255],
+                    type: "Electricity",
+                    desc: "Erratic energy.",
+                    interactions: "Charges Fear into Panic.",
+                },
+
+                // Hidden / Reactions
+                [E_STEAM]: {
+                    name: "Catharsis",
+                    color: [200, 200, 200],
+                    type: "Vapor",
+                    desc: "The release of tension.",
+                    interactions: "Rises and dissipates.",
+                },
+                [E_ROT]: {
+                    name: "Bitter Regret",
+                    color: [101, 67, 33],
+                    type: "Dust",
+                    desc: "Decayed potential.",
+                    interactions: "Falls like dust.",
+                },
+
+                [E_NOSTALGIA]: {
+                    name: "Nostalgia",
+                    color: [147, 112, 219],
+                    type: "Liquid",
+                    desc: "Bittersweet mixture.",
+                    interactions: "Stable liquid.",
+                },
+                [E_PANIC]: {
+                    name: "Panic",
+                    color: [255, 69, 0],
+                    type: "Plasma",
+                    desc: "Explosive.",
+                    interactions: "Destroys environment.",
+                },
+                [E_BLOOM]: {
+                    name: "Bloom",
+                    color: [255, 192, 203],
+                    type: "Static",
+                    desc: "Growth.",
+                    interactions: "Decorative.",
+                },
+            };
+
+            // UI variables
+            let currentTool = "brush";
+            let currentElement = E_CLOUD;
+            let isGeneratorMode = false;
+            let brushSize = 5;
+            let isPaused = true;
+            let tutorialStep = 0;
+            let tutorialTimer = 0;
+            let isHoveringSidebar = false;
+
+            // Tutorial Flags
+            let hasUnpaused = false;
+            let hasDrawnCloud = false;
+            let hasDrawnEmotion = false;
+
+            // --- P5.JS ---
+
+            function setup() {
+                // console.log("Initializing p5...");
+                const canvasContainer =
+                    document.getElementById("canvas-wrapper");
+                let cnv = createCanvas(
+                    canvasContainer.offsetWidth,
+                    canvasContainer.offsetHeight,
+                );
+                cnv.parent("canvas-wrapper");
+
+                resizeGrid();
+                noSmooth();
+                frameRate(60);
+
+                generateElementButtons();
+                updateActiveButton();
+                updatePauseButtonVisuals();
+
+                // prevent context menu on right click
+                document.oncontextmenu = function () {
+                    return false;
+                };
+
+                // fix for lookup popup sticking
+                cnv.elt.addEventListener("mouseleave", () => {
+                    if (currentTool === "lookup" && !isHoveringSidebar) {
+                        document.getElementById("lookup-modal").style.display =
+                            "none";
+                    }
+                });
+            }
+
+            function windowResized() {
+                const canvasContainer =
+                    document.getElementById("canvas-wrapper");
+                resizeCanvas(
+                    canvasContainer.offsetWidth,
+                    canvasContainer.offsetHeight,
+                );
+                resizeGrid();
+            }
+
+            function resizeGrid() {
+                COLS = Math.floor(width / CELL_SIZE);
+                ROWS = Math.floor(height / CELL_SIZE);
+                // console.log("Grid size:", COLS, ROWS);
+                grid = new Array(COLS * ROWS).fill(E_EMPTY);
+                bufferImage = createImage(COLS, ROWS);
+            }
+
+            function draw() {
+                background(0);
+
+                handleInput();
+
+                if (!isPaused) {
+                    stepSimulation();
+                }
+
+                updateTutorial();
+                renderGrid();
+                drawCursor();
+            }
+
+            // --- RENDERING ---
+
+            function renderGrid() {
+                bufferImage.loadPixels();
+
+                // loop through every pixel
+                for (let i = 0; i < grid.length; i++) {
+                    let id = grid[i];
+
+                    let isGen = false;
+                    if (id > GEN_OFFSET) {
+                        id = id - GEN_OFFSET;
+                        isGen = true;
+                    }
+
+                    if (id === E_EMPTY) {
+                        const idx = i * 4;
+                        bufferImage.pixels[idx + 3] = 0;
+                    } else {
+                        const color = ELEMENTS[id].color;
+                        const idx = i * 4;
+                        // noise
+                        let noise = Math.random() > 0.9 ? 15 : 0;
+
+                        if (isGen) {
+                            noise = 40; // make generators look different
+                        }
+
+                        bufferImage.pixels[idx] = Math.min(
+                            255,
+                            color[0] + noise,
+                        );
+                        bufferImage.pixels[idx + 1] = Math.min(
+                            255,
+                            color[1] + noise,
+                        );
+                        bufferImage.pixels[idx + 2] = Math.min(
+                            255,
+                            color[2] + noise,
+                        );
+                        bufferImage.pixels[idx + 3] = 255;
+                    }
+                }
+
+                bufferImage.updatePixels();
+                image(bufferImage, 0, 0, width, height);
+            }
+
+            function drawCursor() {
+                if (
+                    mouseX < 0 ||
+                    mouseX > width ||
+                    mouseY < 0 ||
+                    mouseY > height
+                )
+                    return;
+
+                noFill();
+
+                if (isGeneratorMode && currentTool === "brush") {
+                    stroke(ELEMENTS[currentElement].color);
+                    strokeWeight(2);
+                } else {
+                    stroke(255, 255, 255, 100);
+                    strokeWeight(1);
+                }
+
+                let gx = Math.floor(mouseX / CELL_SIZE);
+                let gy = Math.floor(mouseY / CELL_SIZE);
+
+                if (currentTool === "lookup") {
+                    fill(255);
+                    noStroke();
+                    text("?", mouseX + 10, mouseY - 10);
+                } else {
+                    ellipse(mouseX, mouseY, brushSize * CELL_SIZE);
+                }
+            }
+
+            // --- INPUT ---
+
+            function handleInput() {
+                if (
+                    mouseX < 0 ||
+                    mouseX > width ||
+                    mouseY < 0 ||
+                    mouseY > height
+                )
+                    return;
+                if (isHoveringSidebar) return;
+
+                let gx = Math.floor(mouseX / CELL_SIZE);
+                let gy = Math.floor(mouseY / CELL_SIZE);
+
+                if (currentTool === "lookup") {
+                    if (inBounds(gx, gy)) {
+                        let id = grid[getIndex(gx, gy)];
+                        if (id > GEN_OFFSET) id -= GEN_OFFSET;
+                        showLookupModal(
+                            id !== E_EMPTY ? id : E_EMPTY,
+                            mouseX + 20,
+                            mouseY + 20,
+                        );
+                    }
+                    return;
+                }
+
+                if (mouseIsPressed) {
+                    let typeToPaint = currentElement;
+                    let isGen = isGeneratorMode;
+
+                    if (mouseButton === RIGHT || currentTool === "eraser") {
+                        typeToPaint = E_EMPTY;
+                        isGen = false;
+                    }
+
+                    if (currentTool === "mix") {
+                        let vx = mouseX - pmouseX;
+                        let vy = mouseY - pmouseY;
+                        applyForce(gx, gy, vx, vy, brushSize + 2);
+                        return;
+                    }
+
+                    if (inBounds(gx, gy)) {
+                        let r = Math.floor(brushSize / 2);
+                        let rr = r * r;
+
+                        for (let x = -r; x <= r; x++) {
+                            for (let y = -r; y <= r; y++) {
+                                if (x * x + y * y <= rr) {
+                                    if (Math.random() > 0.1) {
+                                        let px = gx + x;
+                                        let py = gy + y;
+                                        if (inBounds(px, py)) {
+                                            let idx = getIndex(px, py);
+                                            let current = grid[idx];
+
+                                            // don't overwrite walls OR Generators unless erasing
+                                            if (typeToPaint !== E_EMPTY) {
+                                                if (
+                                                    current === E_CLOUD ||
+                                                    current === E_HOT_CLOUD
+                                                )
+                                                    continue;
+                                                if (current > GEN_OFFSET)
+                                                    continue; // Protect generators
+                                            }
+
+                                            grid[idx] = isGen
+                                                ? typeToPaint + GEN_OFFSET
+                                                : typeToPaint;
+
+                                            // tutorial flags
+                                            if (typeToPaint === E_CLOUD)
+                                                hasDrawnCloud = true;
+                                            if (
+                                                [
+                                                    E_JOY,
+                                                    E_SADNESS,
+                                                    E_ANGER,
+                                                ].includes(typeToPaint)
+                                            )
+                                                hasDrawnEmotion = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // --- PHYSICS ENGINE ---
+
+            function stepSimulation() {
+                // Iterate bottom to top
+                for (let y = ROWS - 1; y >= 0; y--) {
+                    let startX = 0,
+                        endX = COLS,
+                        stepX = 1;
+                    // Alternate x direction
+                    if (frameCount % 2 === 0) {
+                        startX = COLS - 1;
+                        endX = -1;
+                        stepX = -1;
+                    }
+
+                    for (let x = startX; x !== endX; x += stepX) {
+                        let idx = getIndex(x, y);
+                        let id = grid[idx];
+
+                        // --- GENERATOR LOGIC ---
+                        if (id > GEN_OFFSET) {
+                            let typeToSpawn = id - GEN_OFFSET;
+                            // spawn randomly in empty neighbors
+                            if (Math.random() < 0.1) {
+                                let dx = Math.floor(Math.random() * 3) - 1;
+                                let dy = Math.floor(Math.random() * 3) - 1;
+                                let nIdx = getIndex(x + dx, y + dy);
+                                if (
+                                    inBounds(x + dx, y + dy) &&
+                                    grid[nIdx] === E_EMPTY
+                                ) {
+                                    grid[nIdx] = typeToSpawn;
+                                }
+                            }
+                            continue;
+                        }
+
+                        let type = id;
+
+                        // Static elements
+                        if (
+                            type === E_EMPTY ||
+                            type === E_CLOUD ||
+                            type === E_HOT_CLOUD ||
+                            type === E_BLOOM
+                        ) {
+                            if (type === E_HOT_CLOUD) {
+                                let hasHeat = false;
+                                // check if heat source is near
+                                for (let i = 0; i < 3; i++) {
+                                    let rx = Math.floor(Math.random() * 3) - 1;
+                                    let ry = Math.floor(Math.random() * 3) - 1;
+                                    let nIdx = getIndex(x + rx, y + ry);
+                                    if (
+                                        inBounds(x + rx, y + ry) &&
+                                        grid[nIdx] === E_ANGER
+                                    ) {
+                                        hasHeat = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasHeat && Math.random() < 0.05)
+                                    grid[idx] = E_CLOUD;
+
+                                processHeatConduction(x, y, idx);
+                            }
+                            if (type === E_CLOUD) {
+                                processHeatConduction(x, y, idx);
+                            }
+                            continue;
+                        }
+
+                        // Movement logic
+                        if (type === E_JOY || type === E_STEAM) {
+                            if (type === E_JOY && Math.random() < 0.5) continue;
+
+                            if (y > 0) {
+                                let up = getIndex(x, y - 1);
+                                if (
+                                    grid[up] === E_EMPTY ||
+                                    isLiquid(grid[up])
+                                ) {
+                                    swap(idx, up);
+                                } else {
+                                    let dir = Math.random() < 0.5 ? -1 : 1;
+                                    let upSide = getIndex(x + dir, y - 1);
+                                    if (
+                                        inBounds(x + dir, y - 1) &&
+                                        grid[upSide] === E_EMPTY
+                                    )
+                                        swap(idx, upSide);
+                                }
+                            }
+                            if (type === E_STEAM && Math.random() < 0.02)
+                                grid[idx] = E_EMPTY;
+                        } else if (type === E_FEAR || type === E_ROT) {
+                            if (y < ROWS - 1) {
+                                let down = getIndex(x, y + 1);
+                                if (
+                                    grid[down] === E_EMPTY ||
+                                    isLiquid(grid[down]) ||
+                                    grid[down] === E_JOY
+                                ) {
+                                    swap(idx, down);
+                                } else {
+                                    let dir = Math.random() < 0.5 ? -1 : 1;
+                                    let downSide = getIndex(x + dir, y + 1);
+                                    if (
+                                        inBounds(x + dir, y + 1) &&
+                                        (grid[downSide] === E_EMPTY ||
+                                            isLiquid(grid[downSide]))
+                                    )
+                                        swap(idx, downSide);
+                                }
+                            }
+                        } else if (
+                            type === E_SADNESS ||
+                            type === E_DISGUST ||
+                            type === E_NOSTALGIA
+                        ) {
+                            if (y < ROWS - 1) {
+                                let down = getIndex(x, y + 1);
+                                if (
+                                    grid[down] === E_EMPTY ||
+                                    grid[down] === E_JOY
+                                ) {
+                                    swap(idx, down);
+                                } else {
+                                    let dir = Math.random() < 0.5 ? -1 : 1;
+                                    let side = getIndex(x + dir, y);
+                                    if (
+                                        type === E_DISGUST &&
+                                        Math.random() > 0.2
+                                    )
+                                        continue;
+                                    if (
+                                        inBounds(x + dir, y) &&
+                                        grid[side] === E_EMPTY
+                                    )
+                                        swap(idx, side);
+                                }
+                            }
+                        } else if (type === E_ANGER || type === E_PANIC) {
+                            let dx = Math.floor(Math.random() * 3) - 1;
+                            let dy = Math.floor(Math.random() * 2) - 1;
+                            let targetX = x + dx,
+                                targetY = y + dy;
+                            if (
+                                inBounds(targetX, targetY) &&
+                                grid[getIndex(targetX, targetY)] === E_EMPTY
+                            ) {
+                                swap(idx, getIndex(targetX, targetY));
+                            }
+                            if (Math.random() < 0.05) grid[idx] = E_EMPTY;
+                        } else if (type === E_ANXIETY) {
+                            if (Math.random() < 0.1) grid[idx] = E_EMPTY;
+                            let moveDir = Math.random() < 0.5 ? -1 : 1;
+                            if (
+                                inBounds(x + moveDir, y) &&
+                                grid[getIndex(x + moveDir, y)] === E_EMPTY
+                            )
+                                swap(idx, getIndex(x + moveDir, y));
+                        } else if (type === E_LOVE) {
+                            if (Math.random() < 0.005) {
+                                let dx = Math.floor(Math.random() * 3) - 1;
+                                let dy = Math.floor(Math.random() * 3) - 1;
+                                let tx = x + dx,
+                                    ty = y + dy;
+                                if (
+                                    inBounds(tx, ty) &&
+                                    grid[getIndex(tx, ty)] === E_EMPTY
+                                )
+                                    grid[getIndex(tx, ty)] = E_LOVE;
+                            }
+                        }
+
+                        processReactions(x, y, idx, type);
+                    }
+                }
+            }
+
+            function processHeatConduction(x, y, idx) {
+                let dx = Math.floor(Math.random() * 3) - 1;
+                let dy = Math.floor(Math.random() * 3) - 1;
+                if (dx === 0 && dy === 0) return;
+
+                let nIdx = getIndex(x + dx, y + dy);
+                if (!inBounds(x + dx, y + dy)) return;
+
+                // Check for Generator Protection
+                if (grid[nIdx] > GEN_OFFSET) return;
+
+                // Helper for safe changes
+                const safeSet = (index, val) => {
+                    if (grid[index] > GEN_OFFSET) return;
+                    grid[index] = val;
+                };
+
+                let nType = grid[nIdx];
+                let myType = grid[idx];
+
+                if (myType === E_CLOUD && nType === E_ANGER) {
+                    grid[idx] = E_HOT_CLOUD;
+                }
+                if (myType === E_HOT_CLOUD && nType === E_CLOUD) {
+                    if (Math.random() < 0.1) safeSet(nIdx, E_HOT_CLOUD);
+                }
+                if (myType === E_HOT_CLOUD && nType === E_SADNESS) {
+                    safeSet(nIdx, E_STEAM);
+                }
+                if (myType === E_HOT_CLOUD && nType === E_LOVE) {
+                    safeSet(nIdx, E_ROT);
+                }
+            }
+
+            // Explosion function
+            function triggerExplosion(cx, cy) {
+                let r = 8; // Explosion radius
+                for (let dy = -r; dy <= r; dy++) {
+                    for (let dx = -r; dx <= r; dx++) {
+                        let dist = dx * dx + dy * dy;
+                        if (dist < r * r) {
+                            let tx = cx + dx;
+                            let ty = cy + dy;
+                            if (inBounds(tx, ty)) {
+                                let idx = getIndex(tx, ty);
+
+                                // Don't blow up generators!
+                                if (grid[idx] > GEN_OFFSET) continue;
+
+                                if (Math.random() < 0.8) {
+                                    grid[idx] = E_PANIC; // Anger everywhere
+                                } else {
+                                    grid[idx] = E_EMPTY; // Destroy stuff
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            function processReactions(x, y, idx, type) {
+                let dx = Math.floor(Math.random() * 3) - 1;
+                let dy = Math.floor(Math.random() * 3) - 1;
+                if (dx === 0 && dy === 0) return;
+
+                let nIdx = getIndex(x + dx, y + dy);
+                if (!inBounds(x + dx, y + dy)) return;
+                let nType = grid[nIdx];
+
+                // generator indestructibility
+                if (nType > GEN_OFFSET) {
+                    nType = nType - GEN_OFFSET;
+                    // nIsGen = true;
+                }
+
+                // helper to protect generators
+                const safeSet = (index, val) => {
+                    if (grid[index] > GEN_OFFSET) return;
+                    grid[index] = val;
+                };
+
+                if (type === E_LOVE && nType === E_SADNESS) {
+                    if (Math.random() < 0.2) safeSet(nIdx, E_LOVE);
+                }
+                if (
+                    (type === E_FEAR && nType === E_LOVE) ||
+                    (type === E_LOVE && nType === E_FEAR)
+                ) {
+                    if (Math.random() < 0.05) {
+                        grid[idx] = E_CLOUD;
+                        safeSet(nIdx, E_CLOUD);
+                    }
+                }
+                if (type === E_ANXIETY && nType === E_SADNESS) {
+                    safeSet(nIdx, E_ANXIETY);
+                }
+                if (
+                    (type === E_DISGUST && nType === E_JOY) ||
+                    (type === E_JOY && nType === E_DISGUST)
+                ) {
+                    grid[idx] = E_ROT;
+                    safeSet(nIdx, E_ROT);
+                }
+                if (
+                    (type === E_ANGER && nType === E_SADNESS) ||
+                    (type === E_SADNESS && nType === E_ANGER)
+                ) {
+                    grid[idx] = E_STEAM;
+                    safeSet(nIdx, E_STEAM);
+                }
+                if (
+                    (type === E_JOY && nType === E_SADNESS) ||
+                    (type === E_SADNESS && nType === E_JOY)
+                ) {
+                    if (Math.random() < 0.1) grid[idx] = E_NOSTALGIA;
+                }
+
+                // explosion trigger
+                if (
+                    (type === E_ANXIETY && nType === E_FEAR) ||
+                    (type === E_FEAR && nType === E_ANXIETY)
+                ) {
+                    triggerExplosion(x, y);
+                }
+
+                if (
+                    (type === E_LOVE && nType === E_JOY) ||
+                    (type === E_JOY && nType === E_LOVE)
+                ) {
+                    if (Math.random() < 0.05) {
+                        grid[idx] = E_BLOOM;
+                        safeSet(nIdx, E_BLOOM);
+                    }
+                }
+                if (type === E_ANGER && nType === E_LOVE)
+                    safeSet(nIdx, E_ANGER);
+                if (type === E_DISGUST && nType === E_CLOUD) {
+                    if (Math.random() < 0.05) safeSet(nIdx, E_EMPTY);
+                }
+            }
+
+            // --- UTILS ---
+            function getIndex(x, y) {
+                return x + y * COLS;
+            }
+            function inBounds(x, y) {
+                return x >= 0 && x < COLS && y >= 0 && y < ROWS;
+            }
+            function swap(i, j) {
+                if (grid[j] > GEN_OFFSET) return;
+                let temp = grid[i];
+                grid[i] = grid[j];
+                grid[j] = temp;
+            }
+            function isLiquid(type) {
+                return (
+                    type === E_SADNESS ||
+                    type === E_DISGUST ||
+                    type === E_NOSTALGIA ||
+                    type === E_ROT
+                );
+            }
+            function resetCanvas() {
+                grid.fill(E_EMPTY);
+            }
+
+            function applyForce(cx, cy, vx, vy, r) {
+                if (Math.abs(vx) < 1 && Math.abs(vy) < 1) return;
+                for (let i = 0; i < r * 2; i++) {
+                    let rx = cx + Math.floor(Math.random() * r * 2) - r;
+                    let ry = cy + Math.floor(Math.random() * r * 2) - r;
+                    if (!inBounds(rx, ry)) continue;
+                    let tx = rx + Math.sign(vx);
+                    let ty = ry + Math.sign(vy);
+                    if (
+                        inBounds(tx, ty) &&
+                        grid[getIndex(rx, ry)] <= GEN_OFFSET
+                    )
+                        swap(getIndex(rx, ry), getIndex(tx, ty));
+                }
+            }
+
+            // --- UI ---
+
+            function updateBrushSize(val) {
+                brushSize = parseInt(val);
+                document.getElementById("size-value").innerText = val;
+            }
+
+            function setTool(tool) {
+                currentTool = tool;
+                isGeneratorMode = false;
+                updateActiveButton();
+                if (!isHoveringSidebar)
+                    document.getElementById("lookup-modal").style.display =
+                        "none";
+            }
+
+            function setElement(id) {
+                currentTool = "brush";
+                currentElement = id;
+                isGeneratorMode = false;
+                updateActiveButton();
+            }
+
+            function toggleGeneratorMode(id) {
+                if (currentElement === id) {
+                    if (id === E_CLOUD) return;
+                    isGeneratorMode = !isGeneratorMode;
+                    updateActiveButton();
+                } else {
+                    setElement(id);
+                }
+            }
+
+            function togglePause() {
+                isPaused = !isPaused;
+                if (!isPaused) hasUnpaused = true;
+                updatePauseButtonVisuals();
+                updateActiveButton();
+            }
+
+            function updatePauseButtonVisuals() {
+                const btn = document.getElementById("btn-pause");
+                const iconPause = document.getElementById("icon-pause");
+                const iconPlay = document.getElementById("icon-play");
+                const text = document.getElementById("text-pause");
+
+                if (isPaused) {
+                    text.innerText = "Start Simulation";
+                    iconPlay.style.display = "block";
+                    iconPause.style.display = "none";
+                    btn.classList.add("active");
+                } else {
+                    text.innerText = "Pause Simulation";
+                    iconPlay.style.display = "none";
+                    iconPause.style.display = "block";
+                    btn.classList.remove("active");
+                }
+            }
+
+            function updateActiveButton() {
+                let btns = document.querySelectorAll(".tool-btn");
+
+                // RESET ALL BUTTONS TO DEFAULT STATE
+                btns.forEach((b) => {
+                    if (b.id !== "btn-pause") {
+                        b.classList.remove("active");
+                        b.style.background = "";
+                        b.style.color = "";
+                        b.style.borderColor = "";
+
+                        // Reset text
+                        if (b.id.startsWith("el-btn-")) {
+                            let id = parseInt(b.id.split("-")[2]);
+                            if (ELEMENTS[id]) {
+                                b.lastChild.textContent = ELEMENTS[id].name;
+                            }
+                        }
+                    }
+                });
+
+                if (currentTool === "lookup")
+                    document
+                        .getElementById("btn-lookup")
+                        .classList.add("active");
+                else if (currentTool === "eraser")
+                    document
+                        .getElementById("btn-eraser")
+                        .classList.add("active");
+                else if (currentTool === "mix")
+                    document.getElementById("btn-mix").classList.add("active");
+
+                if (currentTool === "brush") {
+                    let elBtn = document.getElementById(
+                        "el-btn-" + currentElement,
+                    );
+                    if (elBtn) {
+                        elBtn.classList.add("active");
+
+                        if (isGeneratorMode) {
+                            let data = ELEMENTS[currentElement];
+                            let c = data.color;
+                            elBtn.style.background = `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+                            elBtn.style.color =
+                                c[0] * 0.299 + c[1] * 0.587 + c[2] * 0.114 > 186
+                                    ? "#000"
+                                    : "#FFF";
+                            elBtn.style.borderColor = "#FFF";
+                            elBtn.lastChild.textContent =
+                                data.name + " (Permanent)";
+                        }
+                    }
+                }
+            }
+
+            function showLookupModal(id, x, y) {
+                const modal = document.getElementById("lookup-modal");
+                const data = ELEMENTS[id];
+
+                if (!data) return;
+
+                modal.style.display = "block";
+
+                let finalX = x;
+                let finalY = y;
+                if (finalY + modal.offsetHeight > window.innerHeight)
+                    finalY = window.innerHeight - modal.offsetHeight - 10;
+
+                modal.style.left = finalX + "px";
+                modal.style.top = finalY + "px";
+
+                const titleEl = document.getElementById("lookup-title");
+                titleEl.innerText = data.name;
+                titleEl.style.color = `rgb(${data.color.join(",")})`;
+
+                document.getElementById("lookup-type").innerText = data.type;
+                document.getElementById("lookup-desc").innerText = data.desc;
+                document.getElementById("lookup-interactions").innerText =
+                    data.interactions || "No known interactions.";
+            }
+
+            function hideLookupModal() {
+                document.getElementById("lookup-modal").style.display = "none";
+            }
+
+            function generateElementButtons() {
+                const container = document.getElementById("element-buttons");
+                const ids = [
+                    E_CLOUD,
+                    E_JOY,
+                    E_SADNESS,
+                    E_ANGER,
+                    E_FEAR,
+                    E_DISGUST,
+                    E_LOVE,
+                    E_ANXIETY,
+                ];
+
+                ids.forEach((id) => {
+                    let data = ELEMENTS[id];
+                    let btn = document.createElement("button");
+                    btn.className = "tool-btn";
+                    btn.id = "el-btn-" + id;
+                    btn.onclick = () => setElement(id);
+
+                    if (id !== E_CLOUD) {
+                        btn.ondblclick = () => toggleGeneratorMode(id);
+                        btn.title = "Double Click for Generator Mode";
+                    }
+
+                    btn.onmouseenter = (e) => {
+                        isHoveringSidebar = true;
+                        let rect = btn.getBoundingClientRect();
+                        showLookupModal(id, rect.right + 10, rect.top);
+                    };
+                    btn.onmouseleave = () => {
+                        isHoveringSidebar = false;
+                        hideLookupModal();
+                    };
+
+                    let colorBox = document.createElement("span");
+                    colorBox.className = "color-indicator";
+                    colorBox.style.backgroundColor = `rgb(${data.color.join(",")})`;
+
+                    btn.appendChild(colorBox);
+                    btn.appendChild(document.createTextNode(data.name));
+                    container.appendChild(btn);
+                });
+            }
+
+            // --- TUTORIAL ---
+            const tutorialTexts = [
+                "Simulation Paused. Click 'Start Simulation' above.",
+                "Draw 'Cloud' to create boundaries.",
+                "Fill it with emotions.",
+                "Double click an emotion to make it Permanent.",
+            ];
+
+            function updateTutorial() {
+                tutorialTimer++;
+                if (tutorialStep === 0) {
+                    if (hasUnpaused) {
+                        tutorialStep++;
+                        tutorialTimer = 0;
+                        updateTutorialText();
+                    }
+                } else if (tutorialStep === 1) {
+                    if (hasDrawnCloud) {
+                        tutorialStep++;
+                        tutorialTimer = 0;
+                        updateTutorialText();
+                    }
+                } else if (tutorialStep === 2) {
+                    if (hasDrawnEmotion) {
+                        tutorialStep++;
+                        tutorialTimer = 0;
+                        updateTutorialText();
+                    }
+                } else if (tutorialStep === 3) {
+                    if (tutorialTimer > 300)
+                        document.getElementById(
+                            "tutorial-overlay",
+                        ).style.opacity = 0;
+                }
+            }
+
+            function updateTutorialText() {
+                const el = document.getElementById("tutorial-text");
+                el.innerText = tutorialTexts[tutorialStep];
+                el.style.opacity = 0;
+                setTimeout(() => (el.style.opacity = 1), 100);
+            }
+        </script>
+    </body>
+</html>
