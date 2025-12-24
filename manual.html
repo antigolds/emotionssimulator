@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-color: #1e1e1e;
+            --accent-color: #64ffda;
+            --text-color: #e0e0e0;
+            --border-color: #333;
+            --radius: 8px;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'VT323', monospace;
+            line-height: 1.4;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--panel-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            color: var(--accent-color);
+            text-align: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+            font-size: 2.5rem;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            color: #fff;
+            border-left: 4px solid var(--accent-color);
+            padding-left: 10px;
+            margin-top: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 5px 10px;
+            text-transform: uppercase;
+            font-size: 1.4rem;
+        }
+
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .element-card {
+            background: #252525;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            border-radius: 4px;
+        }
+
+        .dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px; 
+            margin-right: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            flex-shrink: 0;
+        }
+
+        .reaction-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .reaction-item {
+            background: #252525;
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .formula {
+            display: flex;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .plus, .arrow {
+            color: #666;
+            margin: 0 10px;
+        }
+
+        .desc {
+            color: #888;
+            font-style: italic;
+            font-size: 1rem;
+            border-left: 1px solid #444;
+            padding-left: 15px;
+        }
+      
+        .c-cloud { color: #FFFFFF; }
+        .c-joy { color: #FFD700; }
+        .c-sadness { color: #4169E1; }
+        .c-anger { color: #DC143C; }
+        .c-fear { color: #2F4F4F; }
+        .c-disgust { color: #556B2F; }
+        .c-love { color: #FF69B4; }
+        .c-anxiety { color: #E0FFFF; }
+        .c-hotcloud { color: #FF9696; }
+        .c-catharsis { color: #C8C8C8; }
+        .c-regret { color: #654321; }
+        .c-panic { color: #FF4500; }
+        .c-bloom { color: #FFC0CB; }
+        .c-nostalgia { color: #9370DB; }
+        .c-empty { color: #555; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>MANUAL</h1>
+    
+    <p style="text-align: center; color: #888; margin-bottom: 30px;">
+        Reference guide for interactions and hidden states.
+    </p>
+
+    <!-- PALETTE -->
+    <h2>Emotional Palette</h2>
+    <div class="palette-grid">
+        <div class="element-card"><div class="dot" style="background:#FFFFFF"></div><span class="c-cloud">Cloud</span></div>
+        <div class="element-card"><div class="dot" style="background:#FFD700"></div><span class="c-joy">Joy</span></div>
+        <div class="element-card"><div class="dot" style="background:#4169E1"></div><span class="c-sadness">Sadness</span></div>
+        <div class="element-card"><div class="dot" style="background:#DC143C"></div><span class="c-anger">Anger</span></div>
+        <div class="element-card"><div class="dot" style="background:#2F4F4F"></div><span class="c-fear">Fear</span></div>
+        <div class="element-card"><div class="dot" style="background:#556B2F"></div><span class="c-disgust">Disgust</span></div>
+        <div class="element-card"><div class="dot" style="background:#FF69B4"></div><span class="c-love">Love</span></div>
+        <div class="element-card"><div class="dot" style="background:#E0FFFF"></div><span class="c-anxiety">Anxiety</span></div>
+    </div>
+
+    <!-- THERMODYNAMICS -->
+    <h2>Thermodynamics</h2>
+    <div class="reaction-list">
+        <div class="reaction-item">
+            <div class="formula">
+                <span class="c-anger">Anger</span> <span class="plus">+</span> <span class="c-cloud">Cloud</span> 
+                <span class="arrow">➜</span> 
+                <span class="c-hotcloud">Hot Cloud</span>
+            </div>
+            <div class="desc">Conduction: Cloud structure heats up and turns red.</div>
+        </div>
+        <div class="reaction-item">
+            <div class="formula">
+                <span class="c-hotcloud">Hot Cloud</span> <span class="plus">+</span> <span class="c-sadness">Sadness</span> 
+                <span class="arrow">➜</span> 
+                <span class="c-catharsis">Catharsis</span>
+            </div>
+            <div class="desc">Boiling: Water instantly evaporates into steam.</div>
+        </div>
+        <div class="reaction-item">
+            <div class="formula">
+                <span class="c-hotcloud">Hot Cloud</span> <span class="plus">+</span> <span class="c-love">Love</span> 
+                <span class="arrow">➜</span> 
+                <span class="c-regret">Regret</span>
+            </div>
+            <div class="desc">Burning: Organic matter chars into ash.</div>
+        </div>
+        <div class="reaction-item">
+            <div class="formula">
+                <span class="c-anger">Anger</span> <span class="plus">+</span> <span class="c-sadness">Sadness</span> 
+                <span class="arrow">➜</span> 
+                <span class="c-catharsis">Catharsis</span>
+            </div>
+            <div class="desc">Evaporation: Fire meets water.</div>
+        </div>
+    </div>
+
+    <!-- ORGANIC -->
+    <h2>Life & Organic</h2>
+    <div class="reaction-list">
+        <div class="reaction-item">
+            <div class="formula">
+                <span class="c-love">Love</span> <span class="plus">+</span> <span class="c-sadness">Sadness</span> 
+                <span class="arrow">➜</span> 
+                <span class="c-love">++ Love</span>
+            </div>
+            <div class="desc">Growth: Love consumes sadness to grow faster.</div>
+        </div>
+        <div class="reaction-item">
+            <div class="formula">
+                <span class="c-love">Love</span> <span class="plus">+</span> <span class="c-joy">Joy</span> 
+                <span class="arrow">➜</span> 
+                <span class="c-bloom">Bloom</span>
+            </div>
+            <div class="desc">Blooming: Creates static pink flowers.</div>
+        </div>
+        <div class="reaction-item">
+            <div class="formula">
+                <span class="c-anger">Anger</span> <span class="plus">+</span> <span class="c-love">Love</span> 
+                <span class="arrow">➜</span> 
+                <span class="c-anger">Fire Spread</span>
+            </div>
+            <div class="desc">Combustion: Fire spreads through the matter.</div>
+        </div>
+    </div>
+
+    <!-- PHYSICS -->
+    <h2>Physics & Chaos</h2>
+    <div class="reaction-list">
+        <div class="reaction-item">
+            <div class="formula">
+                <span class="c-anxiety">Anxiety</span> <span class="plus">+</span> <span class="c-fear">Fear</span> 
+                <span class="arrow">➜</span> 
+                <span class="c-panic">💥 PANIC 💥</span>
+            </div>
+            <div class="desc">Explosion: Violent reaction creating a plasma crater.</div>
+        </div>
+        <div class="reaction-item">
+            <div class="formula">
+                <span class="c-disgust">Disgust</span> <span class="plus">+</span> <span class="c-cloud">Cloud</span> 
+                <span class="arrow">➜</span> 
+                <span class="c-empty">Void</span>
+            </div>
+            <div class="desc">Corrosion: Acid eats through solid barriers.</div>
+        </div>
+        <div class="reaction-item">
+            <div class="formula">
+                <span class="c-disgust">Disgust</span> <span class="plus">+</span> <span class="c-joy">Joy</span> 
+                <span class="arrow">➜</span> 
+                <span class="c-regret">Regret</span>
+            </div>
+            <div class="desc">Corruption: Slime contaminates joy into dust.</div>
+        </div>
+        <div class="reaction-item">
+            <div class="formula">
+                <span class="c-fear">Fear</span> <span class="plus">+</span> <span class="c-love">Love</span> 
+                <span class="arrow">➜</span> 
+                <span class="c-cloud">Cloud</span>
+            </div>
+            <div class="desc">Solidification: Love stabilizes fear into a solid foundation.</div>
+        </div>
+        <div class="reaction-item">
+            <div class="formula">
+                <span class="c-joy">Joy</span> <span class="plus">+</span> <span class="c-sadness">Sadness</span> 
+                <span class="arrow">➜</span> 
+                <span class="c-nostalgia">Nostalgia</span>
+            </div>
+            <div class="desc">Rare Mix: Forms a stable purple liquid.</div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
